@@ -1,0 +1,254 @@
+MEASURE -- Unit of Measure Library, v0.2a
+COPYRIGHT 2003, David J. Aronson
+Licensing terms not yet determined
+(probably to be GPL, BSD, or some other Open/Free type;
+ for now, ask, but it is NOT PUBLIC DOMAIN!)
+
+
+WHAT IS IT?
+
+This is a library of C++ classes, aimed at avoiding programming errors
+arising from mis-mixing of units of measure.  For instance, remember the
+Mars Lander that crashed because the programmers mixed feet and meters?
+With this system, that would at least have been a runtime exception,
+which would probably have been caught in testing.  (Okay, the actual bug
+should have been caught in testing too... but at least something like
+this would have made it easier, by throwing exceptions.)
+
+I originally thought of this idea (with much different syntax, and not
+necessarily OO), about twenty years ago, as something it would be nice
+to have in a language.  Then, such mistakes could be caught at compile
+time.  However, that's a much hairier problem, so I'm settling for
+catching them at runtime, in an existing language, for now....
+
+
+WHAT'S IN IT?
+
+Mainly, classes to define Units (e.g., meters, kilograms, volts, ounces,
+foot-pounds, etc.), and Measures (G = 9.8 m/s^2, 12 inches per foot, etc.).
+Many Units, and a few Measures, are predefined, and you can easily add your
+own.
+
+
+ANYTHING ELSE?
+
+A few sample programs, some documentation, and a Makefile.  Samples are:
+
+falldist: tell how many meters something will fall in N seconds
+falltime: tell how many seconds something takes to fall N meters
+cvtunits: convert between feet and meters, or slugs and kilograms
+
+
+HOW DO I USE IT?
+
+Units are units of measurement.  Examples include meters, seconds, miles
+per hour, grams per liter, dollars per year, etc.  You can use existing
+Units, and declare new Units.  Units can be either "base" (declared by
+giving only the name), or "built-up" (declared by specifying how they
+are derived, by either multiplying or dividing existing Units).
+
+Measures are the actual measurements; they have units and quantities.
+Examples include 93 million miles, 14 pounds per square inch, 9.8 meters
+per second per second, 5.25 dollars per hour per person, etc.  Some are
+already built-in; you can declare more by giving a quantity and a Unit,
+or just a Unit (in which case the quantity is 0).  Various operations
+can change the quantity, but the unit is forever fixed!  There is one
+exception to this: you can declare a Measure without a unit, and later
+assign it a Measure value.  (E.g., "Measure foo; foo = Measure (55,
+&MILE) / Measure (3600, &SECOND);" or "Measure bar; bar = Measure (14,
+&PSI);".)  Once you do that, though, the unit is indeed forever fixed.
+
+You can add, subtract, multiply, divide, compare, assign, and take roots
+and powers of Measures.
+
+- When you multiply or divide Measures, or take roots or powers, the
+  system creates a Measure of the appropriate quantity and unit.  If the
+  unit was not already defined, the system creates it.
+
+- When you add, subtract, compare or assign Measures, their units MUST
+  match (except in the exception noted above).  Otherwise, an exception
+  is thrown.
+
+For instance, if you create a METER Measure (i.e., a Measure whose Unit
+is &METER) and a SECOND Measure, and divide the first by the second, you
+can only assign the result to (or add it to, or compare it to, or
+subtract it from) a METERPERSECOND Measure.  If you square the METER
+Measure (whether by multiplying it by itself or using the power(int)
+method with an argument of 2), you can only assign that result to a
+SQUAREMETER Measure.  If you take the square root of the SQUAREMETER
+Measure (using the root(int) method), you can only assign that to a
+METER Measure.
+
+You can also multiply or divide a Measure by a number.  You cannot,
+however, add, subtract, compare, or assign between Measures and numbers
+-- think of numbers as Measures with no unit.  There is a special Unit
+called UNITLESS (which, unlike the other built-in Units, is a static
+member of class Unit), but even that cannot be used those ways.
+
+NOTE:  At this time there is no automatic conversion -- assigning a
+METER Measure to a FOOT Measure does not work, let alone convert the
+quantity for you.  That sort of thing was originally planned for Version
+2.  However, that has been postponed indefinitely because you can fake
+it yourself.  See the next section.
+
+
+HOW DO I CONVERT UNITS?
+
+Make a Measure that represents the conversion factor, including the
+appropriately divided Units.  For instance, if you declare a Unit of
+INCHESPERFOOT (by dividing INCH by FOOT), and then a Measure of 12
+INCHESPERFOOT, you can multiply by it to convert feet to inches, or
+divide by it to convert inches to feet.  Likewise, if you declare a Unit
+of FEETPERMETER, and then a Measure of 3.2808333(etc) FEETPERMETER, you
+can use this to convert meters to feet and vice-versa.  See the examples
+in measuredefs.hpp, and the sample program cvtunits.cpp, which converts
+between feet and meters, and between kilograms and slugs.  (Didn't think
+you'd encounter slugs after you finished high school physics, didja?)
+
+Converting between temperatures ni Centigrade and Farenheit is a bit
+trickier, since you have to deal with the zero-points.  How to do it, is
+left as an exercise for the reader.  (Read: I don't wanna bother right
+now.  Maybe later.)
+
+
+HOW DOES IT WORK INSIDE?
+
+Units have a numerator (the top number in a fraction), and a denominator
+(bottom number).  The denominator is usually (always, for base units) 1.
+They are both made up by multiplying together the numbers that represent
+the base units they are composed of.  To avoid accidental clashes, that
+means that the base units must be represented by prime numbers.  When
+you declare a new base unit, the library looks for the first unused
+prime number (starting at 2), and uses that as the numerator, with a
+denominator of 1.  When you declare a new built-up unit, the library
+does the math on the existing units you are building it up from.
+
+For instance, let's say you first declare SECOND, METER, and KILOGRAM.
+These will get the first three prime numbers (2, 3, and 5) as their
+numerators, and 1 for their denominators.  Now let's suppose you want a
+unit for speed, and declare METERPERSECOND, by dividing METER by SECOND.
+This will have a numerator of 3 (representing METER) and a denominator
+of 2 (representing SECOND).  Now let's say you want a unit for
+acceleration, and declare METERPERSECONDPERSECOND, by dividing
+METERPERSECOND by SECOND.  This will have a numerator of 3 (METER), and
+a denominator of 4 (SECOND * SECOND).  Now let's proceed to NEWTON, the
+force needed to accelerate one kilogram at one meter per second per
+second.  You simply multiply METERPERSECONDPERSECOND by KILOGRAM, and
+wind up with a numerator of 15 (KILOGRAM * METER) and a denominator of 4
+(SECOND * SECOND).  Likewise, you can multiply by METER again to get a
+JOULE (45/4, for KILOGRAM * METER * METER / SECOND * SECOND), and divide
+by SECOND again to get a WATT (45/8).
+
+A Measure consists of a (floating point) quantity, and a unit.  The
+various standard math operators (including comparison and assignment)
+are overloaded to Do The Right Thing with Measures, and a few extra
+methods are tossed in for good measure.  Mostly they just check that the
+Units match, and do the proper math on the quantities.  Multiplying,
+dividing, roots, and powers are a bit trickier, as they require coming
+up with the right Unit, which might not exist yet.
+
+That brings us back to the internal magic.  Let's say you have a METER
+Measure, and divide it by a SECOND Measure.  This creates a temporary
+Measure with a denominator of 3 and a numerator of 2.  Rather than store
+that directly in the Measure, though, the system needs a Unit to point
+to.  Therefore, the system finds the METERPERSECOND Unit.  If you then
+multiply this by a KILOGRAM Measure, the system needs a 15/2 Unit... but
+we haven't declared one!  Upon failing to find such a Unit, the system
+will create one, with a unique name, and assign the Measure that Unit.
+This new Unit will work just like the ones you declared.  For instance,
+you can then multiply it by a METERPERSECOND Measure to get a JOULE
+Measure.  In fact, if you use that process to initialize a brand new
+Measure, you can obtain its Unit, and use that to make more Measures.
+(E.g.: Measure myMPS = myMeters / mySecs; Measure speedLimit = Measure
+(100, myMPS.GetUnit());)
+
+Similarly, taking powers and roots simply does the appropriate math on
+the numerator and denominator.  If METER is 3/1, then METER.power(3)
+would be 27/1; similarly, if CUBICMETER is 27/1, then CUBICMETER.root(3)
+would be 3/1.  Negative roots and powers are allowed; these simply swap
+the numerator and denominator.  For instance, METER.power(-3) would be
+1/27, and CUBICMETER.root(-3) would be 1/3.  Taking roots where
+resulting power would be a non-integer (e.g., CUBICMETER.root(2), which
+would be METER to the 1.5 power) results in an exception being thrown.
+
+
+GOTCHAS:
+
+The numerators and denominators are currently implemented as unsigned
+long integers.  It is possible to overflow them.  This can be mitigated
+somewhat by declaring your base units in decreasing order of likelihood
+of being multiplied many times.  However, unless you are going to be
+using many base units simultaneously, or using unusually high powers,
+don't sweat it too hard.  I do plan to add such overflow detection, and
+possibly some way around it.
+
+
+FUTURE PLANS
+
+- More tests.
+- More strings, including abbreviations and plurals.
+- Separate the built-in Units and Measures into optional codefile.
+  (Need to ensure initialization order of assorted things.)
+- More built-in Units, both useful ones and ones only for conversions.
+- More built-in Measures, both physical constants and conversions.
+- Replace knownUnits kluge with class introspection.
+- Integer overflow detection/workaround for numerators/denominators.
+- Make it an actual library (i.e., libmeasure.lib, measure.dll, etc.)
+- Check for, and make if needed, thread-safety
+- More sample programs.
+- Porting to other languages, mainly:
+  = Java, which has easy memory management but no operator overloading
+    (so it will be easier for me to get right, but clumsier to use).
+  = Python, which has BOTH!  B-)
+  = C, which has NEITHER!  B-(  Nor OO.  This will be "interesting".
+  = Visual Basic?
+  = Ada??
+  = Perl???
+  = Definitely NOT COBOL, FORTRAN, or any kind of assembler!
+
+
+CREDITS:
+
+A web page I now can't find, on everything2.com, had a system for
+catching C++ unit mismatch errors at compile time, using a template
+class based on the numerators and denominators constructed from primes,
+as in this system.  That is where I got that idea.  (Prior to that, I
+used UnitBreakdown class, which was basically a vector of "UnitPower" objects,
+each containing a pointer to a (base) Unit, and an integer power.  The power
+could be negative, so there was only one list per Unit.)  I decided to
+continue with this anyway, because there were a few problems that approach
+doesn't solve but this one does, like names, roots/powers, and automatic
+conversion (if I ever bother with it).
+
+I have also discussed the general idea with a few people on the
+comp.software-eng newsgroup.  Later maybe I'll search the Google archives and
+given them proper credit here; meanwhile, you can search if you care.
+
+
+HISTORY:
+
+2003-09-16  Released v0.1 by placing on web site
+2003-09-19  Converted C-type strings to C++ string class
+            Added no-arg constructor for Measure
+            Allowed mismatched Measure assignment IF target has no unit
+            (See cvtunits.cpp for example of using no-unit-yet Measure)
+            Renamed GetBuildupNumbers to CalcBuildupNumbers
+             (so it wouldn't be confused for an accessor; pvt anyway)
+            Renamed Unit::Print and PrintAll methods to GetBreakdown and
+             GetAllBreakdowns, and made them return strings.
+            Made GetAllBreakdowns static.  (Should have been all along!)
+            Added api.txt documentation
+            Dubbed v0.2 and put on web site
+2003-09-29  Added Unit::NameReuseError class
+            Dubbed v0.2a
+
+
+AUTHOR CONTACT:
+
+Dave Aronson
+3612 Old Post Road
+Fairfax, VA 22030-1808
+USA
+
+See http://destined.to/program for email.
+

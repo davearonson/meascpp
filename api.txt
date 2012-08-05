@@ -1,0 +1,144 @@
+C++ API DOCUMENTATION
+
+This package consists of two classes, Unit and Measure.  There is no public
+member data on either.  There are protected members and methods, which I will
+probably never document.  This document documents the public interface.
+
+
+UNITS
+
+
+The class Unit has the following public methods:
+
+
+Constructors
+
+Unit (string n) -- this is what you use to declare a "base" unit, i.e., one
+that is not built up from other units, such as meter or second.  The argument
+becomes the name, which is largely irrelevant except for diagnostic purposes.
+
+Unit (string  n, Unit *  u1, char  op, Unit *  u2) -- this is what you use to
+declare a "built-up" unit, i.e., one that is built up from other units.
+Again, arg n becomes the name.  Args u1 and u2 are the units it is built up
+from, and op is the operation performed on them to create this unit.  For
+instance, "Unit METERSPERSECOND = Unit ("meters per second", &METER, '/',
+&SECOND);".
+
+
+Accessors
+
+string  GetName (void) -- this returns the name of the Unit.
+
+There is currently no way to get at the "construction" of a Unit.  I may
+eventually supply a way to get it, but there will NEVER be a way to set it;
+that would be contrary to the whole point of the package!
+
+
+Other Member Methods
+
+string GetBreakdown (void) -- this returns the makeup of the unit, including
+the numeric numerator and denominator.
+
+Unit *  power (int pow) -- this finds or creates, and then returns, a pointer
+to the Unit that would result from raising the Unit to a given power.
+
+Unit *  root (int pow) -- this finds or creates, and then returns, a pointer
+to the Unit that would result from raisnig the Unit to one *over* a given
+power.  I.e., the result is what *this.power (1/pow) would be, if power() took
+non-integers.
+
+
+Static Methods
+
+Unit * FindUnitByBuildup (Unit *  u1, char  op, Unit *  u2) -- this finds or
+creates, and then returns, a pointer to the unit that would result from doing
+the indicated operation on the indicated existing units.
+
+void  GetAllBreakdowns (void) -- this calls GetBreakdown() on all Units,
+including those created by the system, and returns the accumulated results,
+all ending with linefeeds.
+
+
+Static Data
+
+static Unit  UNITLESS -- this is a Unit with no Units.  Think of it like
+"eaches".  It is useful for figuring out how many of a given item you might
+have or need, such as dividing your yard's perimeter by the length of a
+fence-section to get how many fence-sections you need, without bothering to
+declare a fence-section to be a Unit.
+
+
+Exception Classes
+
+BadNameError (string n) -- this is thrown when you try to create a Unit with a
+name that does not conform to the required parameters.  For now, the only
+requirement is that it not start with a space.
+
+BadOperatorError (char c) -- this is thrown when you try to create a Unit by
+building it up from existing Units, but use an invalid operator character.
+
+BadRootError (Unit * u, int r) -- this is thrown when you try to take a root
+of a Unit, when that operation would result in a non-integer power.
+
+MismatchError (Unit * a, Unit * b) -- this is thrown when you try to add,
+subtract, compare, or assign Measures in two different Units.
+
+NameReuseError (string s, ulong num, ulong den, Unit * u) -- this is thrown
+when you try to add a Unit with the same name as an existing Unit, but
+different numerator or denominator.  If the old numbers match the new ones,
+the old one is silently removed.
+
+NotFoundError (Unit * bad) -- this is thrown when a Unit should have been
+found in the list of known Units, but wasn't.  So far, that is only upon
+deletion.
+
+
+Other
+
+In addition, the == and != operators are overloaded with regard to 
+Units.  The comparison is done only on the numerator and denominator; the
+names are irrelevant.
+
+
+MEASURES
+
+
+The class Measure has the following public methods:
+
+
+Constructors
+
+Measure (void) -- this is used to declare the existence of a Measure, without
+giving a quantity or even a Unit.  It can be assigned a Measure value later,
+which may carry a Unit with it.  (It will, unless it used this same
+constructor and has not been assigned a value itself.)  Once that is done, its
+Unit cannot be changed.
+
+Measure (Unit * u) -- this is used to declare that a Measure is of a certain
+Unit, but without giving an initial quantity.  It defaults to zero.
+
+Measure (double q, Unit * u) -- this is used to declare the Unit, and
+(initial) quantity, of a Measure.
+
+
+Member Methods
+
+double   GetQuantity (void) -- this returns the (current) quantity.
+
+Unit *   GetUnit (void) -- this returns the Unit.
+
+Measure  power (int pow) -- this returns the Measure raised to a given power,
+including both the quantity and the Unit.  For instance, two meters raised to
+the third power is eight cubic meters.  The original Measure is unaffected; a
+new object is returned.
+
+Measure  root (int pow) -- this returns the pow'th root of the Measure,
+including both the quantity and the Unit.  For instance, the cube (third) root
+of eight cubic meters is two meters.  The original Measure is unaffected; a
+new object is returned.
+
+In addition, the basic math, assignment, equality, and order operators (+ - *
+/ += -= *= /= = == != < > <= >=) have been overridden with respect to
+Measures, and *, /, *=, and /= have been overridden with respect to numbers
+(doubles).  Overloading of + and - with respect to numbers was purposely
+omitted, as was autoincrement/autodecrement.

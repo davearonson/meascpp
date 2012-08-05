@@ -1,0 +1,32 @@
+This is a set of classes (and objects and sample programs) in C++, aimed at
+preventing programming errors that result from mismatched units of measure.
+The best-known recent example would be the Mars Lander crash, blamed on mixing
+metric and so-called "English" units.  Using this library, that would have
+thrown an exception, so the error would have been much easier to catch in
+testing.  Files include:
+
+- measure.hpp (declaration of Measure class)
+
+- measure.cpp (implementation of Measure class)
+
+- measuredefs.hpp (declaration of some built-in Measures)
+
+- unit.hpp (declaration of Unit class)
+
+- unit.cpp (implementation of Unit class)
+
+- unitdefs.hpp (declaration of some built-in Units)
+
+- Makefile (if you have use for this you know what it is)
+
+- test.cpp (was some tests; now just dumps the units)
+
+- cvtunits.cpp (sample program; converts between feet/meters and slugs/kilos)
+
+- falldist.cpp (sample program; tells how far something falls in N seconds)
+
+- falltime.cpp (sample program; tells how long it takes something to fall N meters)
+
+- measure.txt (main documentation)
+
+- api.txt (API documentation)
